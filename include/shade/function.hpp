@@ -211,30 +211,30 @@ private:
     }
 
     template<class T>
-    static void move_target(storage_type& destination, void*& destination_object, void*& source_object) {
+    static void move_target(storage_type& dst, void*& dst_obj, void*& src_obj) {
         if constexpr (fits_inline_v<T>) {
-            auto* source = static_cast<T*>(source_object);
-            auto* target = ::new (static_cast<void*>(destination.bytes)) T(std::move(*source));
-            destination_object = std::launder(target);
-            source->~T();
+            auto* src = static_cast<T*>(src_obj);
+            auto* target = ::new (static_cast<void*>(dst.bytes)) T(std::move(*src));
+            dst_obj = std::launder(target);
+            src->~T();
         } else {
-            destination_object = source_object;
+            dst_obj = src_obj;
         }
 
-        source_object = nullptr;
+        src_obj = nullptr;
     }
 
-    void move_from(function_base&& other) {
-        if (!other.table_) {
+    void move_from(function_base&& o) {
+        if (!o.table_) {
             return;
         }
 
-        other.table_->move(storage_, object_, other.object_);
-        table_ = other.table_;
-        uses_inline_ = other.uses_inline_;
+        o.table_->move(storage_, object_, o.object_);
+        table_ = o.table_;
+        uses_inline_ = o.uses_inline_;
 
-        other.table_ = nullptr;
-        other.uses_inline_ = false;
+        o.table_ = nullptr;
+        o.uses_inline_ = false;
     }
 
     invoke_object_type invoke_object() const noexcept {
@@ -529,7 +529,6 @@ public:
     }
 };
 
-// one-shot: operator() requires rvalue context; stored callable is invoked as rvalue
 template<class R, class... Args, std::size_t InlineSize, std::size_t InlineAlign>
 class move_only_function<R(Args...) &&, InlineSize, InlineAlign>
     : public detail::function_interface<
